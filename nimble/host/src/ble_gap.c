@@ -88,7 +88,8 @@
  */
 #define BLE_GAP_CANCEL_RETRY_TIMEOUT_MS         100 /* ms */
 
-#define BLE_GAP_UPDATE_TIMEOUT_MS               40000 /* ms */
+#define BLE_GAP_UPDATE_TIMEOUT_MS(itvl, latency) \
+    (6 * ((itvl) * BLE_HCI_CONN_ITVL / 1000) * ((latency) + 1))
 
 static const struct ble_gap_conn_params ble_gap_conn_params_dflt = {
     .scan_itvl = 0x0010,
@@ -1157,7 +1158,7 @@ ble_gap_rx_update_complete(struct hci_le_conn_upd_complete *evt)
             if (entry != NULL && !(conn->bhc_flags & BLE_HS_CONN_F_MASTER)) {
                 ble_gap_update_to_l2cap(&entry->params, &l2cap_params);
                 entry->exp_os_ticks = ble_npl_time_get() +
-                                      ble_npl_time_ms_to_ticks32(BLE_GAP_UPDATE_TIMEOUT_MS);
+                                      ble_npl_time_ms_to_ticks32(BLE_GAP_UPDATE_TIMEOUT_MS(conn->bhc_itvl, conn->bhc_latency));
             }
             break;
 
@@ -5062,7 +5063,7 @@ ble_gap_update_params(uint16_t conn_handle,
     entry->params = *params;
 
     entry->exp_os_ticks = ble_npl_time_get() +
-                          ble_npl_time_ms_to_ticks32(BLE_GAP_UPDATE_TIMEOUT_MS);
+                          ble_npl_time_ms_to_ticks32(BLE_GAP_UPDATE_TIMEOUT_MS(conn->bhc_itvl, conn->bhc_latency));
 
     BLE_HS_LOG(INFO, "GAP procedure initiated: ");
     ble_gap_log_update(conn_handle, params);
