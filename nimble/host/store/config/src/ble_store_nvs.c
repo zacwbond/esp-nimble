@@ -198,7 +198,7 @@ get_nvs_db_attribute(int obj_type, bool empty, void *value, int num_value)
         /* Check if the user is searching for empty index to write to */
         if (err == ESP_ERR_NVS_NOT_FOUND) {
             if (empty) {
-                ESP_LOGW(TAG, "Empty NVS index found = %d for obj_type = %d", i, obj_type);
+                ESP_LOGD(TAG, "Empty NVS index found = %d for obj_type = %d", i, obj_type);
                 return i;
             }
         } else if (err == ESP_OK) {
@@ -329,7 +329,7 @@ ble_store_nvs_write(int obj_type, const union ble_store_value *val)
 
         /* bare-bone config code will take care of capacity overflow event,
          * however another check added for consistency */
-        ESP_LOGW(TAG, "NVS size overflow.");
+        ESP_LOGD(TAG, "NVS size overflow.");
         return BLE_HS_ESTORE_CAP;
     }
 
@@ -360,7 +360,7 @@ ble_store_nvs_peer_records(int obj_type, const struct ble_hs_dev_records *p_dev_
 
         /* bare-bone config code will take care of capacity overflow event,
          * however another check added for consistency */
-        ESP_LOGW(TAG, "NVS size overflow.");
+        ESP_LOGD(TAG, "NVS size overflow.");
         return BLE_HS_ESTORE_CAP;
     }
 
@@ -406,18 +406,18 @@ populate_db_from_nvs(int obj_type, void *dst, int *db_num)
 
         /* NVS index has data, fill up the ram db with it */
         if (obj_type == BLE_STORE_OBJ_TYPE_PEER_DEV_REC) {
-            ESP_LOGW(TAG, "Peer dev records filled from NVS index = %d", i);
+            ESP_LOGD(TAG, "Peer dev records filled from NVS index = %d", i);
             memcpy(db_item, &p_dev_rec, sizeof(struct ble_hs_dev_records));
             db_item += sizeof(struct ble_hs_dev_records);
             (*db_num)++;
         } else {
             if (obj_type == BLE_STORE_OBJ_TYPE_CCCD) {
-                ESP_LOGW(TAG, "CCCD in RAM is filled up from NVS index = %d", i);
+                ESP_LOGD(TAG, "CCCD in RAM is filled up from NVS index = %d", i);
                 memcpy(db_item, &cur.cccd, sizeof(struct ble_store_value_cccd));
                 db_item += sizeof(struct ble_store_value_cccd);
                 (*db_num)++;
             } else {
-                ESP_LOGW(TAG, "KEY in RAM is filled up from NVS index = %d", i);
+                ESP_LOGD(TAG, "KEY in RAM is filled up from NVS index = %d", i);
                 memcpy(db_item, &cur.sec, sizeof(struct ble_store_value_sec));
                 db_item += sizeof(struct ble_store_value_sec);
                 (*db_num)++;
@@ -441,7 +441,7 @@ ble_nvs_restore_sec_keys(void)
         ESP_LOGE(TAG, "NVS operation failed for 'our sec'");
         return err;
     }
-    ESP_LOGW(TAG, "ble_store_config_our_secs restored %d bonds", ble_store_config_num_our_secs);
+    ESP_LOGD(TAG, "ble_store_config_our_secs restored %d bonds", ble_store_config_num_our_secs);
 
     err = populate_db_from_nvs(BLE_STORE_OBJ_TYPE_PEER_SEC, ble_store_config_peer_secs,
                                &ble_store_config_num_peer_secs);
@@ -449,7 +449,7 @@ ble_nvs_restore_sec_keys(void)
         ESP_LOGE(TAG, "NVS operation failed for 'peer sec'");
         return err;
     }
-    ESP_LOGW(TAG, "ble_store_config_peer_secs restored %d bonds",
+    ESP_LOGD(TAG, "ble_store_config_peer_secs restored %d bonds",
              ble_store_config_num_peer_secs);
 
     err = populate_db_from_nvs(BLE_STORE_OBJ_TYPE_CCCD, ble_store_config_cccds,
@@ -458,7 +458,7 @@ ble_nvs_restore_sec_keys(void)
         ESP_LOGE(TAG, "NVS operation failed for 'CCCD'");
         return err;
     }
-    ESP_LOGW(TAG, "ble_store_config_cccds restored %d bonds",
+    ESP_LOGD(TAG, "ble_store_config_cccds restored %d bonds",
              ble_store_config_num_cccds);
 
     return 0;
@@ -480,7 +480,7 @@ ble_nvs_restore_peer_records(void)
     }
 
     ble_rpa_set_num_peer_dev_records(ble_store_num_peer_dev_rec);
-    ESP_LOGW(TAG, "peer_dev_rec restored %d records", ble_store_num_peer_dev_rec);
+    ESP_LOGD(TAG, "peer_dev_rec restored %d records", ble_store_num_peer_dev_rec);
 
     return 0;
 }
@@ -495,7 +495,7 @@ int ble_store_config_persist_cccds(void)
     if (nvs_count < ble_store_config_num_cccds) {
 
         /* NVS db count less than RAM count, write operation */
-        ESP_LOGW(TAG, "Persisting CCCD value in NVS...");
+        ESP_LOGD(TAG, "Persisting CCCD value in NVS...");
         val.cccd = ble_store_config_cccds[ble_store_config_num_cccds - 1];
         return ble_store_nvs_write(BLE_STORE_OBJ_TYPE_CCCD, &val);
     } else if (nvs_count > ble_store_config_num_cccds) {
@@ -506,7 +506,7 @@ int ble_store_config_persist_cccds(void)
             ESP_LOGE(TAG, "NVS delete operation failed for CCCD");
             return BLE_HS_ESTORE_FAIL;
         }
-        ESP_LOGW(TAG, "Deleting CCCD, nvs idx = %d", nvs_idx);
+        ESP_LOGD(TAG, "Deleting CCCD, nvs idx = %d", nvs_idx);
         return ble_nvs_delete_value(BLE_STORE_OBJ_TYPE_CCCD, nvs_idx);
     }
     return 0;
@@ -521,7 +521,7 @@ int ble_store_config_persist_peer_secs(void)
     if (nvs_count < ble_store_config_num_peer_secs) {
 
         /* NVS db count less than RAM count, write operation */
-        ESP_LOGW(TAG, "Persisting peer sec value in NVS...");
+        ESP_LOGD(TAG, "Persisting peer sec value in NVS...");
         val.sec = ble_store_config_peer_secs[ble_store_config_num_peer_secs - 1];
         return ble_store_nvs_write(BLE_STORE_OBJ_TYPE_PEER_SEC, &val);
     } else if (nvs_count > ble_store_config_num_peer_secs) {
@@ -532,7 +532,7 @@ int ble_store_config_persist_peer_secs(void)
             ESP_LOGE(TAG, "NVS delete operation failed for peer sec");
             return BLE_HS_ESTORE_FAIL;
         }
-        ESP_LOGW(TAG, "Deleting peer sec, nvs idx = %d", nvs_idx);
+        ESP_LOGD(TAG, "Deleting peer sec, nvs idx = %d", nvs_idx);
         return ble_nvs_delete_value(BLE_STORE_OBJ_TYPE_PEER_SEC, nvs_idx);
     }
     return 0;
@@ -547,7 +547,7 @@ int ble_store_config_persist_our_secs(void)
     if (nvs_count < ble_store_config_num_our_secs) {
 
         /* NVS db count less than RAM count, write operation */
-        ESP_LOGW(TAG, "Persisting our sec value to NVS...");
+        ESP_LOGD(TAG, "Persisting our sec value to NVS...");
         val.sec = ble_store_config_our_secs[ble_store_config_num_our_secs - 1];
         return ble_store_nvs_write(BLE_STORE_OBJ_TYPE_OUR_SEC, &val);
     } else if (nvs_count > ble_store_config_num_our_secs) {
@@ -558,7 +558,7 @@ int ble_store_config_persist_our_secs(void)
             ESP_LOGE(TAG, "NVS delete operation failed for our sec");
             return BLE_HS_ESTORE_FAIL;
         }
-        ESP_LOGW(TAG, "Deleting our sec, nvs idx = %d", nvs_idx);
+        ESP_LOGD(TAG, "Deleting our sec, nvs idx = %d", nvs_idx);
         return ble_nvs_delete_value(BLE_STORE_OBJ_TYPE_OUR_SEC, nvs_idx);
     }
     return 0;
@@ -575,7 +575,7 @@ int ble_store_persist_peer_records(void)
     nvs_count = get_nvs_db_attribute(BLE_STORE_OBJ_TYPE_PEER_DEV_REC, 0, NULL, 0);
     if (nvs_count < ble_store_num_peer_dev_rec) {
         /* NVS db count less than RAM count, write operation */
-        ESP_LOGW(TAG, "Persisting peer dev record to NVS...");
+        ESP_LOGD(TAG, "Persisting peer dev record to NVS...");
         peer_rec = peer_dev_rec[ble_store_num_peer_dev_rec - 1];
         return ble_store_nvs_peer_records(BLE_STORE_OBJ_TYPE_PEER_DEV_REC, &peer_rec);
     } else if (nvs_count > ble_store_num_peer_dev_rec) {
@@ -587,7 +587,7 @@ int ble_store_persist_peer_records(void)
             ESP_LOGE(TAG, "NVS delete operation failed for peer records");
             return BLE_HS_ESTORE_FAIL;
         }
-        ESP_LOGW(TAG, "Deleting peer record, nvs idx = %d", nvs_idx);
+        ESP_LOGD(TAG, "Deleting peer record, nvs idx = %d", nvs_idx);
         return ble_nvs_delete_value(BLE_STORE_OBJ_TYPE_PEER_DEV_REC, nvs_idx);
     }
     return 0;
@@ -1666,7 +1666,7 @@ static void config_parse(nvs_handle_t fp, config_t *config)
         // get one line
         int line_len = p_line_end - p_line_bgn;
         if (line_len > 1023) {
-            ESP_LOGW("OSI", "%s exceed max line length on line %d.\n", __func__, line_num);
+            ESP_LOGD("OSI", "%s exceed max line length on line %d.\n", __func__, line_num);
             break;
         }
         memcpy(line, p_line_bgn, line_len);
@@ -1683,7 +1683,7 @@ static void config_parse(nvs_handle_t fp, config_t *config)
         if (*line_ptr == '[') {
             size_t len = strlen(line_ptr);
             if (line_ptr[len - 1] != ']') {
-                ESP_LOGW("OSI", "%s unterminated section name on line %d.\n", __func__, line_num);
+                ESP_LOGD("OSI", "%s unterminated section name on line %d.\n", __func__, line_num);
                 continue;
             }
             strncpy(section, line_ptr + 1, len - 2);
@@ -1691,7 +1691,7 @@ static void config_parse(nvs_handle_t fp, config_t *config)
         } else {
             char *split = strchr(line_ptr, '=');
             if (!split) {
-                ESP_LOGW("OSI", "%s no key/value separator found on line %d.\n", __func__, line_num);
+                ESP_LOGD("OSI", "%s no key/value separator found on line %d.\n", __func__, line_num);
                 continue;
             }
             *split = '\0';
@@ -1816,13 +1816,13 @@ bool config_save(const config_t *config, const char *filename)
             err_code |= 0x20;
             goto error;
         }
-        ESP_LOGW("OSI", "section name: %s, w_cnt + w_cnt_total = %d\n", section->name, w_cnt + w_cnt_total);
+        ESP_LOGD("OSI", "section name: %s, w_cnt + w_cnt_total = %d\n", section->name, w_cnt + w_cnt_total);
         memcpy(buf + w_cnt_total, line, w_cnt);
         w_cnt_total += w_cnt;
 
         for (const list_node_t *enode = list_begin(section->entries); enode != list_end(section->entries); enode = list_next(enode)) {
             const entry_t *entry = (const entry_t *)list_node(enode);
-            ESP_LOGW("OSI", "(key, val): (%s, %s)\n", entry->key, entry->value);
+            ESP_LOGD("OSI", "(key, val): (%s, %s)\n", entry->key, entry->value);
             w_cnt = snprintf(line, 1024, "%s = %s\n", entry->key, entry->value);
             if(w_cnt < 0) {
                 ESP_LOGE("OSI", "snprintf error w_cnt %d.",w_cnt);
@@ -1834,7 +1834,7 @@ bool config_save(const config_t *config, const char *filename)
                 err_code |= 0x20;
                 goto error;
             }
-            ESP_LOGW("OSI", "%s, w_cnt + w_cnt_total = %d", __func__, w_cnt + w_cnt_total);
+            ESP_LOGD("OSI", "%s, w_cnt + w_cnt_total = %d", __func__, w_cnt + w_cnt_total);
             memcpy(buf + w_cnt_total, line, w_cnt);
             w_cnt_total += w_cnt;
         }
@@ -1864,10 +1864,10 @@ bool config_save(const config_t *config, const char *filename)
             snprintf(keyname, keyname_bufsz, "%s%d", CONFIG_KEY, i);
             if (i == count) {
                 err = nvs_set_blob(fp, keyname, buf + i*CONFIG_FILE_MAX_SIZE, w_cnt_total - i*CONFIG_FILE_MAX_SIZE);
-                ESP_LOGW("OSI", "save keyname = %s, i = %d, %d\n", keyname, i, w_cnt_total - i*CONFIG_FILE_MAX_SIZE);
+                ESP_LOGD("OSI", "save keyname = %s, i = %d, %d\n", keyname, i, w_cnt_total - i*CONFIG_FILE_MAX_SIZE);
             }else {
                 err = nvs_set_blob(fp, keyname, buf + i*CONFIG_FILE_MAX_SIZE, CONFIG_FILE_MAX_SIZE);
-                ESP_LOGW("OSI", "save keyname = %s, i = %d, %d\n", keyname, i, CONFIG_FILE_MAX_SIZE);
+                ESP_LOGD("OSI", "save keyname = %s, i = %d, %d\n", keyname, i, CONFIG_FILE_MAX_SIZE);
             }
             if (err != ESP_OK) {
                 nvs_close(fp);
@@ -1930,148 +1930,6 @@ static bool check_is_present(const void* src, size_t size)
     }
 
     return false;
-}
-
-void ZWB_LOG_INT(const char* header, uint8_t v)
-{
-    ESP_LOGE(TAG, "========== %s -- %02X", header, v);
-}
-
-void ZWB_DUMP_KEY_DETAILS(const char* header, int obj_type, const union ble_store_key *store_key)
-{
-    ESP_LOGE(TAG, "========== %s", header);
-    ESP_LOGE(TAG, "==========  OBJ TYPE %u", obj_type);
-
-    if (obj_type != BLE_STORE_OBJ_TYPE_PEER_SEC || obj_type != BLE_STORE_OBJ_TYPE_OUR_SEC)
-    {
-        return;
-    }
-
-    ESP_LOGE(TAG, "==========  PEER ADDR");
-    ESP_LOGE(TAG, "==========    type         %02X",
-            store_key->sec.peer_addr.type);
-    ESP_LOGE(TAG, "==========    val          %02X%02X%02X%02X%02X%02X",
-            store_key->sec.peer_addr.val[0],
-            store_key->sec.peer_addr.val[1],
-            store_key->sec.peer_addr.val[2],
-            store_key->sec.peer_addr.val[3],
-            store_key->sec.peer_addr.val[4],
-            store_key->sec.peer_addr.val[5]);
-
-    ESP_LOGE(TAG, "==========  RAND ADDR");
-    ESP_LOGE(TAG, "==========    present      %04X",
-            store_key->sec.ediv_rand_present);
-    ESP_LOGE(TAG, "==========    rand_num     %02X%02X%02X%02X%02X%02X%02X%02X",
-            ((uint8_t*)(&store_key->sec.rand_num))[0],
-            ((uint8_t*)(&store_key->sec.rand_num))[1],
-            ((uint8_t*)(&store_key->sec.rand_num))[2],
-            ((uint8_t*)(&store_key->sec.rand_num))[3],
-            ((uint8_t*)(&store_key->sec.rand_num))[4],
-            ((uint8_t*)(&store_key->sec.rand_num))[5],
-            ((uint8_t*)(&store_key->sec.rand_num))[6],
-            ((uint8_t*)(&store_key->sec.rand_num))[7]);
-    ESP_LOGE(TAG, "==========    ediv         %04X",
-            store_key->sec.ediv);
-
-    
-}
-
-void ZWB_DUMP_SECURITY_DETAILS(const char* header, struct ble_store_value_sec* sec)
-{
-    ESP_LOGE(TAG, "========== %s", header);
-    ESP_LOGE(TAG, "==========  AUTH");
-    ESP_LOGE(TAG, "==========    auth         %04X",
-            sec->authenticated);
-    ESP_LOGE(TAG, "==========    sc           %02X",
-            sec->sc);
-
-    ESP_LOGE(TAG, "==========  PEER ADDR");
-    ESP_LOGE(TAG, "==========    type         %02X",
-            sec->peer_addr.type);
-    ESP_LOGE(TAG, "==========    val          %02X%02X%02X%02X%02X%02X",
-            sec->peer_addr.val[0],
-            sec->peer_addr.val[1],
-            sec->peer_addr.val[2],
-            sec->peer_addr.val[3],
-            sec->peer_addr.val[4],
-            sec->peer_addr.val[5]);
-
-    ESP_LOGE(TAG, "==========  LTK");
-    ESP_LOGE(TAG, "==========    present      %02X",
-            sec->ltk_present);
-    ESP_LOGE(TAG, "==========    key_size     %02X",
-            sec->key_size);
-    ESP_LOGE(TAG, "==========    ediv         %04X",
-            sec->ediv);
-    ESP_LOGE(TAG, "==========    rand_num     %02X%02X%02X%02X%02X%02X%02X%02X",
-            ((uint8_t*)(&sec->rand_num))[0],
-            ((uint8_t*)(&sec->rand_num))[1],
-            ((uint8_t*)(&sec->rand_num))[2],
-            ((uint8_t*)(&sec->rand_num))[3],
-            ((uint8_t*)(&sec->rand_num))[4],
-            ((uint8_t*)(&sec->rand_num))[5],
-            ((uint8_t*)(&sec->rand_num))[6],
-            ((uint8_t*)(&sec->rand_num))[7]);
-
-    ESP_LOGE(TAG, "==========    ltk          %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-            sec->ltk[0],
-            sec->ltk[1],
-            sec->ltk[2],
-            sec->ltk[3],
-            sec->ltk[4],
-            sec->ltk[5],
-            sec->ltk[6],
-            sec->ltk[7],
-            sec->ltk[8],
-            sec->ltk[9],
-            sec->ltk[10],
-            sec->ltk[11],
-            sec->ltk[12],
-            sec->ltk[13],
-            sec->ltk[14],
-            sec->ltk[15]);
-
-    ESP_LOGE(TAG, "==========  CSRK");
-    ESP_LOGE(TAG, "==========    present      %02X",
-            sec->csrk_present);
-    ESP_LOGE(TAG, "==========    csrk         %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-            sec->csrk[0],
-            sec->csrk[1],
-            sec->csrk[2],
-            sec->csrk[3],
-            sec->csrk[4],
-            sec->csrk[5],
-            sec->csrk[6],
-            sec->csrk[7],
-            sec->csrk[8],
-            sec->csrk[9],
-            sec->csrk[10],
-            sec->csrk[11],
-            sec->csrk[12],
-            sec->csrk[13],
-            sec->csrk[14],
-            sec->csrk[15]);
-
-    ESP_LOGE(TAG, "==========  IRK");
-    ESP_LOGE(TAG, "==========    present      %02X",
-            sec->irk_present);
-    ESP_LOGE(TAG, "==========    irk          %02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-            sec->irk[0],
-            sec->irk[1],
-            sec->irk[2],
-            sec->irk[3],
-            sec->irk[4],
-            sec->irk[5],
-            sec->irk[6],
-            sec->irk[7],
-            sec->irk[8],
-            sec->irk[9],
-            sec->irk[10],
-            sec->irk[11],
-            sec->irk[12],
-            sec->irk[13],
-            sec->irk[14],
-            sec->irk[15]);
 }
 
 static void bluedroid_nvs_to_nimble_nvs(void)
