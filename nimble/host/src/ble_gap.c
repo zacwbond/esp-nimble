@@ -88,7 +88,8 @@
  */
 #define BLE_GAP_CANCEL_RETRY_TIMEOUT_MS         100 /* ms */
 
-#define BLE_GAP_UPDATE_TIMEOUT_MS               40000 /* ms */
+#define BLE_GAP_UPDATE_TIMEOUT_MS(itvl, latency) \
+    (6 * ((itvl) * BLE_HCI_CONN_ITVL / 1000) * ((latency) + 1))
 
 static const struct ble_gap_conn_params ble_gap_conn_params_dflt = {
     .scan_itvl = 0x0010,
@@ -1157,7 +1158,7 @@ ble_gap_rx_update_complete(struct hci_le_conn_upd_complete *evt)
             if (entry != NULL && !(conn->bhc_flags & BLE_HS_CONN_F_MASTER)) {
                 ble_gap_update_to_l2cap(&entry->params, &l2cap_params);
                 entry->exp_os_ticks = ble_npl_time_get() +
-                                      ble_npl_time_ms_to_ticks32(BLE_GAP_UPDATE_TIMEOUT_MS);
+                                      ble_npl_time_ms_to_ticks32(BLE_GAP_UPDATE_TIMEOUT_MS(conn->bhc_itvl, conn->bhc_latency));
             }
             break;
 
@@ -1669,15 +1670,26 @@ int
 ble_gap_rx_l2cap_update_req(uint16_t conn_handle,
                             struct ble_gap_upd_params *params)
 {
+    struct ble_gap_upd_params self_params;
     struct ble_gap_event event;
     int rc;
+
+    /* Copy the peer params into the self params to make it easy on the
+     * application.  The application callback will change only the fields which
+     * it finds unsuitable.
+     */
+    self_params = *params;
 
     memset(&event, 0, sizeof event);
     event.type = BLE_GAP_EVENT_L2CAP_UPDATE_REQ;
     event.conn_update_req.conn_handle = conn_handle;
+    event.conn_update_req.self_params = &self_params;
     event.conn_update_req.peer_params = params;
 
     rc = ble_gap_call_conn_event_cb(&event, conn_handle);
+
+    *params = self_params;
+
     return rc;
 }
 
@@ -1805,7 +1817,6 @@ ble_gap_update_timer(void)
         ble_hs_unlock();
 
         if (entry != NULL) {
-            ble_gap_update_notify(conn_handle, BLE_HS_ETIMEOUT);
             ble_gap_update_entry_free(entry);
         }
     } while (entry != NULL);
@@ -5062,7 +5073,7 @@ ble_gap_update_params(uint16_t conn_handle,
     entry->params = *params;
 
     entry->exp_os_ticks = ble_npl_time_get() +
-                          ble_npl_time_ms_to_ticks32(BLE_GAP_UPDATE_TIMEOUT_MS);
+                          ble_npl_time_ms_to_ticks32(BLE_GAP_UPDATE_TIMEOUT_MS(conn->bhc_itvl, conn->bhc_latency));
 
     BLE_HS_LOG(INFO, "GAP procedure initiated: ");
     ble_gap_log_update(conn_handle, params);
